@@ -22,9 +22,18 @@ def sample_fn(
     image_data = image.get_fdata()
     time.sleep(2)
 
-    plotted_img = image_data[:, :, 80]
-    plotted_img = (plotted_img - plotted_img.min()) / (plotted_img.max() - plotted_img.min())
-    return plotted_img
+    image_data = (image_data - image_data.min()) / (image_data.max() - image_data.min())
+    # plotted_img = image_data[:, :, 80]
+    # plotted_img = (plotted_img - plotted_img.min()) / (plotted_img.max() - plotted_img.min())
+    return [
+        image_data[:, :, 10],
+        image_data[:, :, 20],
+        image_data[:, :, 30],
+        image_data[:, :, 40],
+        image_data[:, :, 50],
+        image_data[:, :, 60],
+        image_data[:, :, 70],
+    ]
 
 title = "Amigo's Brains with Diffusion Models"
 description = """
@@ -63,13 +72,13 @@ inputs_block = [
     ),
 ]
 
-def update_plotted_img(idx):
-    global image_data
-    print(idx)
-    plotted_img = image_data[:, :, idx]
-    plotted_img = (plotted_img - plotted_img.min()) / (plotted_img.max() - plotted_img.min())
-
-    return plotted_img
+# def update_plotted_img(idx):
+#     global image_data
+#     print(idx)
+#     plotted_img = image_data[:, :, idx]
+#     plotted_img = (plotted_img - plotted_img.min()) / (plotted_img.max() - plotted_img.min())
+#
+#     return plotted_img
 
 
 demo = gr.Blocks()
@@ -131,19 +140,13 @@ with demo:
                 show_label=False,
                 interactive=True,
             )
-            axis_slider = gr.Slider(
-                minimum=0,
-                maximum=159,
-                value=80,
-                step=1,
-                show_label=False,
-                interactive=True,
+        sample_gallery = gr.Gallery().style(
+                grid=(
+                    1,
+                    5,
+                ),
+                height="auto",
             )
-        sample_img = gr.Image(
-            image_mode="L",
-            type="numpy",
-            interactive=False,
-        )
     gr.Markdown(article)
 
     # clear_btn.click()
@@ -157,13 +160,8 @@ with demo:
             ventricular_slider,
             brain_slider,
         ],
-        sample_img,
+        sample_gallery,
     )
 
-    axis_slider.change(
-        update_plotted_img,
-        axis_slider,
-        sample_img
-    )
 
-demo.launch(enable_queue=True)
+demo.launch()
