@@ -1,0 +1,11 @@
+runai submit \
+  --name gradio \
+  --image 10.202.67.207:5000/wds20:gradio \
+  --backoff-limit 0 \
+  --gpu 1 \
+  --cpu 4 \
+  --large-shm \
+  --run-as-user \
+  --host-ipc \
+  --project wds20 \
+  --command -- sleep infinity
