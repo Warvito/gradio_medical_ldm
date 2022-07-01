@@ -65,18 +65,36 @@ sliders = [
 
 # Layout
 fig.update_layout(
-    title='Slices in volumetric data',
+    showlegend=False,
     width=1200,
     height=1200,
     scene=dict(
-        zaxis=dict(range=[-0.1, 6.8], autorange=False),
-        aspectratio=dict(x=1, y=1, z=1),
+        zaxis=dict(
+            range=[-0.1, 6.8],
+            autorange=False,
+            showgrid=False,
+            zeroline=False,
+            visible=False,
+        ),
+        xaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            visible=False,
+        ),
+        yaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            visible=False,
+        ),
+        aspectratio=dict(x=2, y=2, z=1),
         camera=dict(
             up=dict(x=0, y=-1, z=0),
             center=dict(x=0, y=0, z=0),
             eye=dict(x=0.0, y=0.0, z=1.0),
             projection=dict(type="orthographic"),
         ),
+        dragmode=False,
+        hovermode=False,
     ),
     updatemenus=[
         {
@@ -102,12 +120,17 @@ fig.update_layout(
     sliders=sliders
 )
 
-# name = 'default'
-# camera = dict(
-#     up=dict(x=0, y=-1, z=0),
-#     center=dict(x=0, y=0, z=0),
-#     eye=dict(x=0.0, y=0.0, z=1.5)
-# )
-# fig.update_layout(scene_camera=camera, title=name)
+config = {
+    'displaylogo': False,
+    'modeBarButtonsToRemove': [
+        'orbitRotation',
+        'tableRotation',
+        "resetCameraDefault3d",
+        "zoom3d",
+        "pan3d",
+        "toImage"
+    ],
+    'displayModeBar': True,
+}
 
-fig.show()
+fig.show(config=config)
