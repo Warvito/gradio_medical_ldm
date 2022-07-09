@@ -1,2 +1,2 @@
-gradio==3.0.15
+gradio==3.0.24
 plotly==5.9.0

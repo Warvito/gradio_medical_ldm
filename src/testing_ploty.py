@@ -1,22 +1,28 @@
 import numpy as np
 import plotly.graph_objects as go
+import nibabel as nib
 
-from skimage import io
-
-vol = io.imread("https://s3.amazonaws.com/assets.datacamp.com/blog_assets/attention-mri.tif")
-volume = vol.T
+# def draw():
+selected_plane = 2
+image = nib.load("/media/walter/Storage/Downloads/sub-000000_T1w.nii.gz")
+image_data = image.get_fdata()
+image_data = image_data[5:-5,5:-5,:-15]
+image_data = (image_data - image_data.min()) / (image_data.max() - image_data.min())
+volume = image_data
+volume = np.swapaxes(volume,selected_plane,0)
 r, c = volume[0].shape
 
-nb_frames = 68
+nb_frames = volume.shape[0]
+z_max = (nb_frames-1)/10.0
 
 fig = go.Figure(
     frames=[
         go.Frame(
             data=go.Surface(
-                z=(6.7 - k * 0.1) * np.ones((r, c)),
-                surfacecolor=np.flipud(volume[67 - k]),
+                z=(z_max - k * 0.1) * np.ones((r, c)),
+                surfacecolor=np.flipud(volume[(nb_frames-1) - k]),
                 cmin=0,
-                cmax=200,
+                cmax=1,
                 showscale=False
             ),
             name=str(k)  # you need to name the frame for the animation to behave properly
@@ -27,11 +33,11 @@ fig = go.Figure(
 
 fig.add_trace(
     go.Surface(
-        z=6.7 * np.ones((r, c)),
-        surfacecolor=np.flipud(volume[67]),
+        z=z_max * np.ones((r, c)),
+        surfacecolor=np.flipud(volume[(nb_frames-1)]),
         colorscale='Gray',
         cmin=0,
-        cmax=200,
+        cmax=1,
         showscale=False
     )
 )
@@ -48,7 +54,7 @@ def frame_args(duration):
 
 sliders = [
     {
-        "pad": {"b": 10, "t": 60},
+        "pad": {"b": 10, "t": 10},
         "len": 0.9,
         "x": 0.1,
         "y": 0,
@@ -66,11 +72,12 @@ sliders = [
 # Layout
 fig.update_layout(
     showlegend=False,
-    width=1200,
-    height=1200,
+    width=900,
+    height=900,
     scene=dict(
+        bgcolor="black",
         zaxis=dict(
-            range=[-0.1, 6.8],
+            range=[-0.1, (nb_frames)/10.0],
             autorange=False,
             showgrid=False,
             zeroline=False,
@@ -111,7 +118,7 @@ fig.update_layout(
                 },
             ],
             "direction": "left",
-            "pad": {"r": 10, "t": 70},
+            "pad": {"r": 10, "t": 20},
             "type": "buttons",
             "x": 0.1,
             "y": 0,
