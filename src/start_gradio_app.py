@@ -73,7 +73,12 @@ def get_fig(a, b, c, d):
 
     fig = px.bar(df, x="continent", y="pop", color="continent",
                  animation_frame="year", animation_group="country", range_y=[0, 4000000000])
-    return fig
+
+    fig2 = px.bar(df, x="continent", y="pop", color="continent",
+                 animation_frame="year", animation_group="country", range_y=[0, 4000000000])
+    fig3 = px.bar(df, x="continent", y="pop", color="continent",
+                 animation_frame="year", animation_group="country", range_y=[0, 4000000000])
+    return fig, fig2, fig3
 
 
 demo = gr.Blocks()
@@ -153,17 +158,15 @@ with demo:
                         with gr.Row():
                             unrest_submit_btn = gr.Button("Generate", variant="primary")
 
-        # with gr.Box():
-        #     with gr.Row():
-        #         axis_radio = gr.Radio(
-        #             choices=["Sagittal", "Coronal", "Axial"],
-        #             value="Axial",
-        #             type="index",
-        #             show_label=False,
-        #             interactive=True,
-        #         )
         with gr.Column():
-            sample_plot = gr.Plot()
+            with gr.Box():
+                with gr.Tabs():
+                    with gr.TabItem("Axial View"):
+                        axial_sample_plot = gr.Plot()
+                    with gr.TabItem("Sagittal View"):
+                        sagittal_sample_plot = gr.Plot()
+                    with gr.TabItem("Coronal View"):
+                        coronal_sample_plot = gr.Plot()
     gr.Markdown(article)
 
     submit_btn.click(
@@ -174,7 +177,7 @@ with demo:
             ventricular_slider,
             brain_slider,
         ],
-        sample_plot,
+        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
     unrest_submit_btn.click(
         get_fig,
@@ -184,7 +187,7 @@ with demo:
             unrest_ventricular_slider,
             unrest_brain_slider,
         ],
-        sample_plot,
+        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
     # examples = gr.Examples(
     #     examples=[
