@@ -24,4 +24,4 @@ def draw_plotly():
 
 demo = gr.Interface(fn=draw_plotly, inputs=[], outputs=gr.Plot())
 
-demo.launch(debug=True)
+demo.launch(server_name="0.0.0.0", server_port=7601)

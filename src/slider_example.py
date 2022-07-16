@@ -4,7 +4,6 @@ import numpy as np
 
 def draw_plotly():
     fig = go.Figure()
-
     # Add traces, one for each slider step
     for step in np.arange(0, 5, 0.1):
         fig.add_trace(
@@ -14,10 +13,8 @@ def draw_plotly():
                 name="𝜈 = " + str(step),
                 x=np.arange(0, 10, 0.01),
                 y=np.sin(step * np.arange(0, 10, 0.01))))
-
     # Make 10th trace visible
     fig.data[10].visible = True
-
     # Create and add slider
     steps = []
     for i in range(len(fig.data)):
@@ -28,14 +25,12 @@ def draw_plotly():
         )
         step["args"][0]["visible"][i] = True
         steps.append(step)
-
     sliders = [dict(
         active=10,
         currentvalue={"prefix": "Frequency: "},
         pad={"t": 50},
         steps=steps
     )]
-
     fig.update_layout(
         sliders=sliders
     )
@@ -44,4 +39,4 @@ def draw_plotly():
 
 demo = gr.Interface(fn=draw_plotly, inputs=[], outputs=gr.Plot())
 
-demo.launch()
+demo.launch(server_name="0.0.0.0", server_port=7601)

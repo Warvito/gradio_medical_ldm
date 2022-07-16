@@ -54,14 +54,15 @@ def sample_fn(
 
 
 # TEXT
-title = "Amigo's Brains with Diffusion Models"
+title = "Generating Brain Imaging with Diffusion Models"
 description = """
-Test our diffusion models trained to generate brain imaging data! 
-<a href="https://arxiv.org/abs/2112.00726"><img style="display:inline" src="https://img.shields.io/badge/arXiv-1234.56789-b31b1b.svg"></a>
+<center>Gradio demo for our brain generator! 🧠</center>
 """
 
 article = """
 Checkout our dataset with [100K synthetic brain](https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b)! 🧠🧠🧠
+
+Reference: <a href="https://arxiv.org/abs/2112.00726"><img style="display:inline" src="https://img.shields.io/badge/arXiv-1234.56789-b31b1b.svg"></a>
 
 By [Walter Hugo Lopez Pinaya](https://twitter.com/warvito) from [AMIGO](https://amigos.ai/)
 <center><a href="https://amigos.ai/"><img src="https://amigos.ai/assets/images/logo_dark_rect.png" width=300px></a></center>
@@ -95,6 +96,8 @@ with demo:
             with gr.Box():
                 with gr.Tabs():
                     with gr.TabItem("Inputs"):
+                        with gr.Row():
+                            gr.Markdown("Choose how your generated brain will look like!")
                         with gr.Row():
                             gender_radio = gr.Radio(
                                 choices=["Female", "Male"],
@@ -130,26 +133,28 @@ with demo:
 
                     with gr.TabItem("Unrestricted Inputs"):
                         with gr.Row():
-                            unrest_gender_radio = gr.Number(
+                            gr.Markdown("Be free to use any value to generate the wildest brains!")
+                        with gr.Row():
+                            unrest_gender_number = gr.Number(
                                 value=1.0,
                                 precision=1,
                                 label="Gender [Female=0, Male=1]",
                                 interactive=True,
                             )
-                            unrest_age_slider = gr.Number(
+                            unrest_age_number = gr.Number(
                                 value=63,
                                 precision=1,
                                 label="Age [years]",
                                 interactive=True,
                             )
                         with gr.Row():
-                            unrest_ventricular_slider = gr.Number(
+                            unrest_ventricular_number = gr.Number(
                                 value=0.5,
                                 precision=2,
                                 label="Volume of ventricular cerebrospinal fluid",
                                 interactive=True,
                             )
-                            unrest_brain_slider = gr.Number(
+                            unrest_brain_number = gr.Number(
                                 value=0.5,
                                 precision=2,
                                 label="Volume of brain",
@@ -157,6 +162,21 @@ with demo:
                             )
                         with gr.Row():
                             unrest_submit_btn = gr.Button("Generate", variant="primary")
+
+                        gr.Examples(
+                            examples=[
+                                [1, 63, 1.3, 0.5],
+                                [0, 63, 1.9, 0.5],
+                                [1, 63, -0.5, 0.5],
+                                [0, 63, 0.5, -0.3],
+                            ],
+                            inputs=[
+                                unrest_gender_number,
+                                unrest_age_number,
+                                unrest_ventricular_number,
+                                unrest_brain_number,
+                            ]
+                        )
 
         with gr.Column():
             with gr.Box():
@@ -182,25 +202,12 @@ with demo:
     unrest_submit_btn.click(
         get_fig,
         [
-            unrest_gender_radio,
-            unrest_age_slider,
-            unrest_ventricular_slider,
-            unrest_brain_slider,
+            unrest_gender_number,
+            unrest_age_number,
+            unrest_ventricular_number,
+            unrest_brain_number,
         ],
         [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
-    # examples = gr.Examples(
-    #     examples=[
-    #         [1.0, 63, 0.9, 0.5],
-    #         [0.0, 63, 0.1, 0.5],
-    #         [1.0, 45, 0.5, 0.5],
-    #     ],
-    #     inputs=[
-    #         gender_radio,
-    #         age_slider,
-    #         ventricular_slider,
-    #         brain_slider,
-    #     ]
-    # )
 
 demo.launch()
