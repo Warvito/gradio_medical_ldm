@@ -85,7 +85,7 @@ def create_videos(
     image_data = (image_data - image_data.min()) / (image_data.max() - image_data.min())
 
     # Write frames to video
-    with mediapy.VideoWriter("./brain_axial.mp4", shape=(150, 214), fps=12, codec="vp9") as w:
+    with mediapy.VideoWriter("./brain_axial.mp4", shape=(150, 214), fps=12, crf=18) as w:
         for idx in range(image_data.shape[2]):
             img = (image_data[:, :, idx] * 255).astype(np.uint8)
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
@@ -93,7 +93,7 @@ def create_videos(
             w.add_image(frame)
 
     # Write frames to video
-    with mediapy.VideoWriter("./brain_sagittal.mp4", shape=(145, 214), fps=12, codec="vp9") as w:
+    with mediapy.VideoWriter("./brain_sagittal.mp4", shape=(145, 214), fps=12, crf=18) as w:
         for idx in range(image_data.shape[0]):
             img = (np.rot90(image_data[idx, :, :]) * 255).astype(np.uint8)
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
@@ -101,11 +101,9 @@ def create_videos(
             w.add_image(frame)
 
     # Write frames to video
-    with mediapy.VideoWriter("./brain_coronal.mp4", shape=(145, 150), fps=12, codec="vp9") as w:
-        # with mediapy.VideoWriter("./brain_coronal.mp4", shape=(150, 145), fps=12, codec="vp9") as w:
+    with mediapy.VideoWriter("./brain_coronal.mp4", shape=(145, 150), fps=12, crf=18) as w:
         for idx in range(image_data.shape[1]):
             img = (np.rot90(np.flip(image_data, axis=1)[:, idx, :]) * 255).astype(np.uint8)
-            # img = (image_data[:, idx, :] * 255).astype(np.uint8)
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
             frame = img_as_ubyte(img)
             w.add_image(frame)
@@ -116,8 +114,14 @@ def create_videos(
 # TEXT
 title = "Generating Brain Imaging with Diffusion Models"
 description = """
-<center>Gradio demo for our brain generator 🧠</center>
 <center><a href="https://amigos.ai/">[PAPER]</a> <a href="https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b">[DATASET]</a></center>
+
+<details>
+<summary>Instructions</summary>
+
+With this app, you can generate synthetic brain images with one click!<br />You have two ways to set how your generated brain will look like:<br />- Using the "Inputs" tab that creates well-behaved brains using the same value ranges that our models learned<br />- Or using the "Unrestricted Inputs" tab to generate the wildest brains!<br />Enjoy!
+</details>
+
 """
 
 article = """
@@ -141,8 +145,6 @@ with demo:
             with gr.Box():
                 with gr.Tabs():
                     with gr.TabItem("Inputs"):
-                        with gr.Row():
-                            gr.Markdown("Choose how your generated brain will look like")
                         with gr.Row():
                             gender_radio = gr.Radio(
                                 choices=["Female", "Male"],
@@ -177,8 +179,6 @@ with demo:
                             submit_btn = gr.Button("Generate", variant="primary")
 
                     with gr.TabItem("Unrestricted Inputs"):
-                        with gr.Row():
-                            gr.Markdown("Be free to use any value to generate the wildest brains!")
                         with gr.Row():
                             unrest_gender_number = gr.Number(
                                 value=1.0,
@@ -255,4 +255,5 @@ with demo:
         [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
 
-demo.launch(share=True)
+# demo.launch(share=True)
+demo.launch()
