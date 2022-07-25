@@ -1,9 +1,12 @@
 import shutil
+import uuid
+from pathlib import Path
 
 import cv2
 import gradio as gr
 import mediapy
 import mlflow.pytorch
+import nibabel as nib
 import numpy as np
 import torch
 from skimage import img_as_ubyte
@@ -69,7 +72,7 @@ def sample_fn(
     return x_hat.numpy()
 
 
-def create_videos(
+def create_videos_and_file(
         gender_radio,
         age_slider,
         ventricular_slider,
@@ -83,32 +86,47 @@ def create_videos(
     )
     image_data = image_data[0, 0, 5:-5, 5:-5, :-15]
     image_data = (image_data - image_data.min()) / (image_data.max() - image_data.min())
+    image_data = (image_data * 255).astype(np.uint8)
+
+    output_dir = Path(f"/media/walter/Storage/Projects/gradio_medical_ldm/outputs/{str(uuid.uuid4())}")
+    output_dir.mkdir(exist_ok=True)
 
     # Write frames to video
-    with mediapy.VideoWriter("./brain_axial.mp4", shape=(150, 214), fps=12, crf=18) as w:
+    with mediapy.VideoWriter(f"{str(output_dir)}/brain_axial.mp4", shape=(150, 214), fps=12, crf=18) as w:
         for idx in range(image_data.shape[2]):
-            img = (image_data[:, :, idx] * 255).astype(np.uint8)
+            img = image_data[:, :, idx]
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
             frame = img_as_ubyte(img)
             w.add_image(frame)
 
     # Write frames to video
-    with mediapy.VideoWriter("./brain_sagittal.mp4", shape=(145, 214), fps=12, crf=18) as w:
+    with mediapy.VideoWriter(f"{str(output_dir)}/brain_sagittal.mp4", shape=(145, 214), fps=12, crf=18) as w:
         for idx in range(image_data.shape[0]):
-            img = (np.rot90(image_data[idx, :, :]) * 255).astype(np.uint8)
+            img = np.rot90(image_data[idx, :, :])
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
             frame = img_as_ubyte(img)
             w.add_image(frame)
 
     # Write frames to video
-    with mediapy.VideoWriter("./brain_coronal.mp4", shape=(145, 150), fps=12, crf=18) as w:
+    with mediapy.VideoWriter(f"{str(output_dir)}/brain_coronal.mp4", shape=(145, 150), fps=12, crf=18) as w:
         for idx in range(image_data.shape[1]):
-            img = (np.rot90(np.flip(image_data, axis=1)[:, idx, :]) * 255).astype(np.uint8)
+            img = np.rot90(np.flip(image_data, axis=1)[:, idx, :])
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
             frame = img_as_ubyte(img)
             w.add_image(frame)
 
-    return "./brain_axial.mp4", "./brain_sagittal.mp4", "./brain_coronal.mp4"
+    # Create file
+    affine = np.array(
+        [[-1., 0., 0., 96.48149872],
+         [0., 1., 0., -141.47715759],
+         [0., 0., 1., -156.55375671],
+         [0., 0., 0., 1.]]
+    )
+    empty_header = nib.Nifti1Header()
+    sample_nii = nib.Nifti1Image(image_data, affine, empty_header)
+    nib.save(sample_nii, f"{str(output_dir)}/my_brain.nii.gz")
+
+    return f"{str(output_dir)}/brain_axial.mp4", f"{str(output_dir)}/brain_sagittal.mp4", f"{str(output_dir)}/brain_coronal.mp4", f"{str(output_dir)}/my_brain.nii.gz"
 
 
 # TEXT
@@ -119,7 +137,7 @@ description = """
 <details>
 <summary>Instructions</summary>
 
-With this app, you can generate synthetic brain images with one click!<br />You have two ways to set how your generated brain will look like:<br />- Using the "Inputs" tab that creates well-behaved brains using the same value ranges that our models learned<br />- Or using the "Unrestricted Inputs" tab to generate the wildest brains!<br />Enjoy!
+With this app, you can generate synthetic brain images with one click!<br />You have two ways to set how your generated brain will look like:<br />- Using the "Inputs" tab that creates well-behaved brains using the same value ranges that our models learned<br />- Or using the "Unrestricted Inputs" tab to generate the wildest brains!<br />After customisation, just hit "Generate" and wait a few seconds. You can also download your new brain and visualise it with your favorite nifti viewer app. <b>Enjoy!<b>
 </details>
 
 """
@@ -232,27 +250,29 @@ with demo:
                         sagittal_sample_plot = gr.Video(show_label=False)
                     with gr.TabItem("Coronal View"):
                         coronal_sample_plot = gr.Video(show_label=False)
+                sample_file = gr.File(label="My Brain")
+
     gr.Markdown(article)
 
     submit_btn.click(
-        create_videos,
+        create_videos_and_file,
         [
             gender_radio,
             age_slider,
             ventricular_slider,
             brain_slider,
         ],
-        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
+        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
     )
     unrest_submit_btn.click(
-        create_videos,
+        create_videos_and_file,
         [
             unrest_gender_number,
             unrest_age_number,
             unrest_ventricular_number,
             unrest_brain_number,
         ],
-        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
+        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
     )
 
 # demo.launch(share=True)
