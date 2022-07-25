@@ -41,7 +41,7 @@ def sample_fn(
     print(f"Ventricular volume: {ventricular_slider}")
     print(f"Brain volume: {brain_slider}")
 
-    age_slider = (age_slider - 44) / (82-44)
+    age_slider = (age_slider - 44) / (82 - 44)
 
     cond = torch.Tensor([[gender_radio, age_slider, ventricular_slider, brain_slider]])
     latent_shape = [1, 3, 20, 28, 20]
@@ -75,7 +75,6 @@ def create_videos(
         ventricular_slider,
         brain_slider,
 ):
-
     image_data = sample_fn(
         gender_radio,
         age_slider,
@@ -86,48 +85,46 @@ def create_videos(
     image_data = (image_data - image_data.min()) / (image_data.max() - image_data.min())
 
     # Write frames to video
-    frames = []
-    for idx in range(image_data.shape[2]):
-        img = (image_data[:, :, idx] * 255).astype(np.uint8)
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-        frame = img_as_ubyte(img)
-        frames.append(frame)
-    mediapy.write_video(path="./brain_axial.mp4", images=frames, fps=12)
+    with mediapy.VideoWriter("./brain_axial.mp4", shape=(150, 214), fps=12, codec="vp9") as w:
+        for idx in range(image_data.shape[2]):
+            img = (image_data[:, :, idx] * 255).astype(np.uint8)
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+            frame = img_as_ubyte(img)
+            w.add_image(frame)
 
     # Write frames to video
-    frames = []
-    for idx in range(image_data.shape[1]):
-        img = (np.rot90(np.flip(image_data, axis=1)[:, idx, :]) * 255).astype(np.uint8)
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-        frame = img_as_ubyte(img)
-        frames.append(frame)
-    mediapy.write_video(path="./brain_coronal.mp4", images=frames, fps=12)
+    with mediapy.VideoWriter("./brain_sagittal.mp4", shape=(145, 214), fps=12, codec="vp9") as w:
+        for idx in range(image_data.shape[0]):
+            img = (np.rot90(image_data[idx, :, :]) * 255).astype(np.uint8)
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+            frame = img_as_ubyte(img)
+            w.add_image(frame)
 
     # Write frames to video
-    frames = []
-    for idx in range(image_data.shape[0]):
-        img = (np.rot90(image_data[idx, :, :]) * 255).astype(np.uint8)
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-        frame = img_as_ubyte(img)
-        frames.append(frame)
-    mediapy.write_video(path="./brain_sagittal.mp4", images=frames, fps=12)
+    with mediapy.VideoWriter("./brain_coronal.mp4", shape=(145, 150), fps=12, codec="vp9") as w:
+        # with mediapy.VideoWriter("./brain_coronal.mp4", shape=(150, 145), fps=12, codec="vp9") as w:
+        for idx in range(image_data.shape[1]):
+            img = (np.rot90(np.flip(image_data, axis=1)[:, idx, :]) * 255).astype(np.uint8)
+            # img = (image_data[:, idx, :] * 255).astype(np.uint8)
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+            frame = img_as_ubyte(img)
+            w.add_image(frame)
 
-    return "./brain_axial.mp4", "./brain_coronal.mp4", "./brain_sagittal.mp4"
+    return "./brain_axial.mp4", "./brain_sagittal.mp4", "./brain_coronal.mp4"
 
 
 # TEXT
 title = "Generating Brain Imaging with Diffusion Models"
 description = """
-<center>Gradio demo for our brain generator! 🧠</center>
+<center>Gradio demo for our brain generator 🧠</center>
+<center><a href="https://amigos.ai/">[PAPER]</a> <a href="https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b">[DATASET]</a></center>
 """
 
 article = """
 Checkout our dataset with [100K synthetic brain](https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b)! 🧠🧠🧠
 
-Reference: <a href="https://arxiv.org/abs/2112.00726"><img style="display:inline" src="https://img.shields.io/badge/arXiv-1234.56789-b31b1b.svg"></a>
-
-By [Walter Hugo Lopez Pinaya](https://twitter.com/warvito) from [AMIGO](https://amigos.ai/)
-<center><a href="https://amigos.ai/"><img src="https://amigos.ai/assets/images/logo_dark_rect.png" width=300px></a></center>
+App made by [Walter Hugo Lopez Pinaya](https://twitter.com/warvito) from [AMIGO](https://amigos.ai/)
+<center><img src="https://amigos.ai/assets/images/logo_dark_rect.png" alt="amigos.ai" width=300px></center>
 """
 
 demo = gr.Blocks()
@@ -145,7 +142,7 @@ with demo:
                 with gr.Tabs():
                     with gr.TabItem("Inputs"):
                         with gr.Row():
-                            gr.Markdown("Choose how your generated brain will look like!")
+                            gr.Markdown("Choose how your generated brain will look like")
                         with gr.Row():
                             gender_radio = gr.Radio(
                                 choices=["Female", "Male"],
@@ -258,4 +255,4 @@ with demo:
         [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
 
-demo.launch()
+demo.launch(share=True)
