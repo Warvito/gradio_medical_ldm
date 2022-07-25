@@ -6,6 +6,9 @@ runai submit \
   --cpu 4 \
   --large-shm \
   --run-as-user \
+  --port 7602 \
+  --service-type portforward \
+  --host-network \
   --host-ipc \
   --project wds20 \
   --command -- sleep infinity
