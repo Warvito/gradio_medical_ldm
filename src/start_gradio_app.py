@@ -1,9 +1,17 @@
+import shutil
+
+import cv2
 import gradio as gr
+import mediapy
 import mlflow.pytorch
-import plotly.express as px
+import numpy as np
 import torch
+from skimage import img_as_ubyte
 
 from models.ddim import DDIMSampler
+
+ffmpeg_path = shutil.which('ffmpeg')
+mediapy.set_ffmpeg(ffmpeg_path)
 
 # Loading model
 vqvae = mlflow.pytorch.load_model(
@@ -27,6 +35,14 @@ def sample_fn(
         ventricular_slider,
         brain_slider,
 ):
+    print("Sampling brain!")
+    print(f"Gender: {gender_radio}")
+    print(f"Age: {age_slider}")
+    print(f"Ventricular volume: {ventricular_slider}")
+    print(f"Brain volume: {brain_slider}")
+
+    age_slider = (age_slider - 44) / (82-44)
+
     cond = torch.Tensor([[gender_radio, age_slider, ventricular_slider, brain_slider]])
     latent_shape = [1, 3, 20, 28, 20]
     cond_crossatten = cond.unsqueeze(1)
@@ -50,7 +66,53 @@ def sample_fn(
     with torch.no_grad():
         x_hat = vqvae.reconstruct_ldm_outputs(latent_vectors).cpu()
 
-    return x_hat
+    return x_hat.numpy()
+
+
+def create_videos(
+        gender_radio,
+        age_slider,
+        ventricular_slider,
+        brain_slider,
+):
+
+    image_data = sample_fn(
+        gender_radio,
+        age_slider,
+        ventricular_slider,
+        brain_slider,
+    )
+    image_data = image_data[0, 0, 5:-5, 5:-5, :-15]
+    image_data = (image_data - image_data.min()) / (image_data.max() - image_data.min())
+
+    # Write frames to video
+    frames = []
+    for idx in range(image_data.shape[2]):
+        img = (image_data[:, :, idx] * 255).astype(np.uint8)
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+        frame = img_as_ubyte(img)
+        frames.append(frame)
+    mediapy.write_video(path="./brain_axial.mp4", images=frames, fps=12)
+
+    # Write frames to video
+    frames = []
+    for idx in range(image_data.shape[1]):
+        img = (np.rot90(np.flip(image_data, axis=1)[:, idx, :]) * 255).astype(np.uint8)
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+        frame = img_as_ubyte(img)
+        frames.append(frame)
+    mediapy.write_video(path="./brain_coronal.mp4", images=frames, fps=12)
+
+    # Write frames to video
+    frames = []
+    for idx in range(image_data.shape[0]):
+        img = (np.rot90(image_data[idx, :, :]) * 255).astype(np.uint8)
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+        frame = img_as_ubyte(img)
+        frames.append(frame)
+    mediapy.write_video(path="./brain_sagittal.mp4", images=frames, fps=12)
+
+    return "./brain_axial.mp4", "./brain_coronal.mp4", "./brain_sagittal.mp4"
 
 
 # TEXT
@@ -67,20 +129,6 @@ Reference: <a href="https://arxiv.org/abs/2112.00726"><img style="display:inline
 By [Walter Hugo Lopez Pinaya](https://twitter.com/warvito) from [AMIGO](https://amigos.ai/)
 <center><a href="https://amigos.ai/"><img src="https://amigos.ai/assets/images/logo_dark_rect.png" width=300px></a></center>
 """
-
-
-def get_fig(a, b, c, d):
-    df = px.data.gapminder()
-
-    fig = px.bar(df, x="continent", y="pop", color="continent",
-                 animation_frame="year", animation_group="country", range_y=[0, 4000000000])
-
-    fig2 = px.bar(df, x="continent", y="pop", color="continent",
-                 animation_frame="year", animation_group="country", range_y=[0, 4000000000])
-    fig3 = px.bar(df, x="continent", y="pop", color="continent",
-                 animation_frame="year", animation_group="country", range_y=[0, 4000000000])
-    return fig, fig2, fig3
-
 
 demo = gr.Blocks()
 
@@ -182,15 +230,15 @@ with demo:
             with gr.Box():
                 with gr.Tabs():
                     with gr.TabItem("Axial View"):
-                        axial_sample_plot = gr.Plot()
+                        axial_sample_plot = gr.Video(show_label=False)
                     with gr.TabItem("Sagittal View"):
-                        sagittal_sample_plot = gr.Plot()
+                        sagittal_sample_plot = gr.Video(show_label=False)
                     with gr.TabItem("Coronal View"):
-                        coronal_sample_plot = gr.Plot()
+                        coronal_sample_plot = gr.Video(show_label=False)
     gr.Markdown(article)
 
     submit_btn.click(
-        get_fig,
+        create_videos,
         [
             gender_radio,
             age_slider,
@@ -200,7 +248,7 @@ with demo:
         [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
     unrest_submit_btn.click(
-        get_fig,
+        create_videos,
         [
             unrest_gender_number,
             unrest_age_number,
