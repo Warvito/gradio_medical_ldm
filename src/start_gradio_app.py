@@ -137,7 +137,7 @@ description = """
 <details>
 <summary>Instructions</summary>
 
-With this app, you can generate synthetic brain images with one click!<br />You have two ways to set how your generated brain will look like:<br />- Using the "Inputs" tab that creates well-behaved brains using the same value ranges that our models learned<br />- Or using the "Unrestricted Inputs" tab to generate the wildest brains!<br />After customisation, just hit "Generate" and wait a few seconds. You can also download your new brain and visualise it with your favorite nifti viewer app. <b>Enjoy!<b>
+With this app, you can generate synthetic brain images with one click!<br />You have two ways to set how your generated brain will look like:<br />- Using the "Inputs" tab that creates well-behaved brains using the same value ranges that our models learned<br />- Or using the "Unrestricted Inputs" tab to generate the wildest brains!<br />After customisation, just hit "Generate" and wait a few seconds. You can also download your new brain and visualise it with your favorite nifti viewer app. <br />* Note: You might need to rename the downloaded file to "my_brain.nii.gz" due to some issues with Gradio. =X <b>Enjoy!<b>
 </details>
 
 """
