@@ -170,12 +170,12 @@ def unrest_randomise():
 title = "Generating Brain Imaging with Diffusion Models"
 description = """
 <center><b>WORK IN PROGRESS. DO NOT SHARE.</b></center>
-<center><a href="https://amigos.ai/">[PAPER]</a> <a href="https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b">[DATASET]</a></center>
+<center><a href="https://arxiv.org/">[PAPER]</a> <a href="https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b">[DATASET]</a></center>
 
 <details>
 <summary>Instructions</summary>
 
-With this app, you can generate synthetic brain images with one click!<br />You have two ways to set how your generated brain will look like:<br />- Using the "Inputs" tab that creates well-behaved brains using the same value ranges that our models learned as described in paper linked above<br />- Or using the "Unrestricted Inputs" tab to generate the wildest brains!<br />After customisation, just hit "Generate" and wait a few seconds. You can also download your new brain and visualise it with your favorite nifti viewer app. <br />* Note: You might need to rename the downloaded file to "my_brain.nii.gz". <b>Enjoy!<b>
+With this app, you can generate synthetic brain images with one click!<br />You have two ways to set how your generated brain will look like:<br />- Using the "Inputs" tab that creates well-behaved brains using the same value ranges that our models learned as described in paper linked above<br />- Or using the "Unrestricted Inputs" tab to generate the wildest brains!<br />After customisation, just hit "Generate" and wait a few seconds.<br />Note: if are having problems with the videos, try our app using chrome. <b>Enjoy!<b>
 </details>
 
 """
