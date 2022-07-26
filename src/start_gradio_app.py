@@ -2,7 +2,7 @@ import random
 import shutil
 import uuid
 from pathlib import Path
-
+import time
 import cv2
 import gradio as gr
 import mediapy
@@ -14,7 +14,7 @@ from skimage import img_as_ubyte
 
 from models.ddim import DDIMSampler
 
-ffmpeg_path = shutil.which('ffmpeg')
+ffmpeg_path = shutil.which("ffmpeg")
 mediapy.set_ffmpeg(ffmpeg_path)
 
 # Loading model
@@ -34,10 +34,10 @@ vqvae = vqvae.to(device)
 
 
 def sample_fn(
-        gender_radio,
-        age_slider,
-        ventricular_slider,
-        brain_slider,
+    gender_radio,
+    age_slider,
+    ventricular_slider,
+    brain_slider,
 ):
     print("Sampling brain!")
     print(f"Gender: {gender_radio}")
@@ -53,8 +53,8 @@ def sample_fn(
     cond_concat = cond.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
     cond_concat = cond_concat.expand(list(cond.shape[0:2]) + list(latent_shape[2:]))
     conditioning = {
-        'c_concat': [cond_concat.float().to(device)],
-        'c_crossattn': [cond_crossatten.float().to(device)],
+        "c_concat": [cond_concat.float().to(device)],
+        "c_crossattn": [cond_crossatten.float().to(device)],
     }
 
     ddim = DDIMSampler(diffusion)
@@ -64,7 +64,7 @@ def sample_fn(
         conditioning=conditioning,
         batch_size=1,
         shape=list(latent_shape[1:]),
-        eta=1.0
+        eta=1.0,
     )
 
     with torch.no_grad():
@@ -74,12 +74,14 @@ def sample_fn(
 
 
 def create_videos_and_file(
-        gender_radio,
-        age_slider,
-        ventricular_slider,
-        brain_slider,
+    gender_radio,
+    age_slider,
+    ventricular_slider,
+    brain_slider,
 ):
-    output_dir = Path(f"/media/walter/Storage/Projects/gradio_medical_ldm/outputs/{str(uuid.uuid4())}")
+    output_dir = Path(
+        f"/media/walter/Storage/Projects/gradio_medical_ldm/outputs/{str(uuid.uuid4())}"
+    )
     output_dir.mkdir(exist_ok=True)
 
     image_data = sample_fn(
@@ -93,7 +95,9 @@ def create_videos_and_file(
     image_data = (image_data * 255).astype(np.uint8)
 
     # Write frames to video
-    with mediapy.VideoWriter(f"{str(output_dir)}/brain_axial.mp4", shape=(150, 214), fps=12, crf=18) as w:
+    with mediapy.VideoWriter(
+        f"{str(output_dir)}/brain_axial.mp4", shape=(150, 214), fps=12, crf=18
+    ) as w:
         for idx in range(image_data.shape[2]):
             img = image_data[:, :, idx]
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
@@ -101,7 +105,9 @@ def create_videos_and_file(
             w.add_image(frame)
 
     # Write frames to video
-    with mediapy.VideoWriter(f"{str(output_dir)}/brain_sagittal.mp4", shape=(145, 214), fps=12, crf=18) as w:
+    with mediapy.VideoWriter(
+        f"{str(output_dir)}/brain_sagittal.mp4", shape=(145, 214), fps=12, crf=18
+    ) as w:
         for idx in range(image_data.shape[0]):
             img = np.rot90(image_data[idx, :, :])
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
@@ -109,25 +115,36 @@ def create_videos_and_file(
             w.add_image(frame)
 
     # Write frames to video
-    with mediapy.VideoWriter(f"{str(output_dir)}/brain_coronal.mp4", shape=(145, 150), fps=12, crf=18) as w:
+    with mediapy.VideoWriter(
+        f"{str(output_dir)}/brain_coronal.mp4", shape=(145, 150), fps=12, crf=18
+    ) as w:
         for idx in range(image_data.shape[1]):
             img = np.rot90(np.flip(image_data, axis=1)[:, idx, :])
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
             frame = img_as_ubyte(img)
             w.add_image(frame)
 
-    # Create file
-    affine = np.array(
-        [[-1., 0., 0., 96.48149872],
-         [0., 1., 0., -141.47715759],
-         [0., 0., 1., -156.55375671],
-         [0., 0., 0., 1.]]
-    )
-    empty_header = nib.Nifti1Header()
-    sample_nii = nib.Nifti1Image(image_data, affine, empty_header)
-    nib.save(sample_nii, f"{str(output_dir)}/my_brain.nii.gz")
+    # # Create file
+    # affine = np.array(
+    #     [
+    #         [-1.0, 0.0, 0.0, 96.48149872],
+    #         [0.0, 1.0, 0.0, -141.47715759],
+    #         [0.0, 0.0, 1.0, -156.55375671],
+    #         [0.0, 0.0, 0.0, 1.0],
+    #     ]
+    # )
+    # empty_header = nib.Nifti1Header()
+    # sample_nii = nib.Nifti1Image(image_data, affine, empty_header)
+    # nib.save(sample_nii, f"{str(output_dir)}/my_brain.nii.gz")
 
-    return f"{str(output_dir)}/brain_axial.mp4", f"{str(output_dir)}/brain_sagittal.mp4", f"{str(output_dir)}/brain_coronal.mp4", f"{str(output_dir)}/my_brain.nii.gz"
+    # time.sleep(2)
+
+    return (
+        f"{str(output_dir)}/brain_axial.mp4",
+        f"{str(output_dir)}/brain_sagittal.mp4",
+        f"{str(output_dir)}/brain_coronal.mp4",
+        # f"{str(output_dir)}/my_brain.nii.gz",
+    )
 
 
 def randomise():
@@ -136,7 +153,7 @@ def randomise():
         random.choice(["Female", "Male"]),
         random_age,
         round(random.uniform(0, 1.0), 2),
-        round(random.uniform(0, 1.0), 2)
+        round(random.uniform(0, 1.0), 2),
     )
 
 
@@ -146,7 +163,7 @@ def unrest_randomise():
         random.choice([1, 0]),
         random_age,
         round(random.uniform(-1.0, 2.0), 2),
-        round(random.uniform(-1.0, 2.0), 2)
+        round(random.uniform(-1.0, 2.0), 2),
     )
 
 
@@ -175,9 +192,7 @@ demo = gr.Blocks()
 
 with demo:
     gr.Markdown(
-        "<h1 style='text-align: center; margin-bottom: 1rem'>"
-        + title
-        + "</h1>"
+        "<h1 style='text-align: center; margin-bottom: 1rem'>" + title + "</h1>"
     )
     gr.Markdown(description)
     with gr.Row():
@@ -262,7 +277,7 @@ with demo:
                                 unrest_age_number,
                                 unrest_ventricular_number,
                                 unrest_brain_number,
-                            ]
+                            ],
                         )
 
         with gr.Column():
@@ -274,7 +289,7 @@ with demo:
                         sagittal_sample_plot = gr.Video(show_label=False)
                     with gr.TabItem("Coronal View"):
                         coronal_sample_plot = gr.Video(show_label=False)
-                sample_file = gr.File(label="My Brain")
+                # sample_file = gr.File(label="My Brain")
 
     gr.Markdown(article)
 
@@ -286,7 +301,8 @@ with demo:
             ventricular_slider,
             brain_slider,
         ],
-        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
+        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
+        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
     unrest_submit_btn.click(
         create_videos_and_file,
@@ -296,20 +312,28 @@ with demo:
             unrest_ventricular_number,
             unrest_brain_number,
         ],
-        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
+        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
+        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
 
     randomize_btn.click(
-        randomise,
-        [],
-        [gender_radio, age_slider, ventricular_slider, brain_slider],
+        fn=randomise,
+        inputs=[],
+        queue=False,
+        outputs=[gender_radio, age_slider, ventricular_slider, brain_slider],
     )
 
     unrest_randomize_btn.click(
-        unrest_randomise,
-        [],
-        [unrest_gender_number, unrest_age_number, unrest_ventricular_number, unrest_brain_number],
+        fn=unrest_randomise,
+        inputs=[],
+        queue=False,
+        outputs=[
+            unrest_gender_number,
+            unrest_age_number,
+            unrest_ventricular_number,
+            unrest_brain_number,
+        ],
     )
 
-# demo.launch(share=True, enable_queue=True)
-demo.launch(debug=True)
+demo.launch(share=True, enable_queue=True, prevent_thread_lock=True)
+# demo.launch(debug=True, enable_queue=True)
