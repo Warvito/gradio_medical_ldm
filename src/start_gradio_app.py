@@ -96,7 +96,6 @@ def create_videos_and_file(
     image_data = (image_data * 255).astype(np.uint8)
 
     # Write frames to video
-    mediapy.set_ffmpeg(ffmpeg_path)
     with mediapy.VideoWriter(
         f"{str(output_dir)}/brain_axial.mp4", shape=(150, 214), fps=12, crf=18
     ) as w:
@@ -106,7 +105,6 @@ def create_videos_and_file(
             frame = img_as_ubyte(img)
             w.add_image(frame)
 
-    mediapy.set_ffmpeg(ffmpeg_path)
     with mediapy.VideoWriter(
         f"{str(output_dir)}/brain_sagittal.mp4", shape=(145, 214), fps=12, crf=18
     ) as w:
@@ -116,7 +114,6 @@ def create_videos_and_file(
             frame = img_as_ubyte(img)
             w.add_image(frame)
 
-    mediapy.set_ffmpeg(ffmpeg_path)
     with mediapy.VideoWriter(
         f"{str(output_dir)}/brain_coronal.mp4", shape=(145, 150), fps=12, crf=18
     ) as w:
