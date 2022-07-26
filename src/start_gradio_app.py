@@ -1,3 +1,4 @@
+import random
 import shutil
 import uuid
 from pathlib import Path
@@ -78,6 +79,9 @@ def create_videos_and_file(
         ventricular_slider,
         brain_slider,
 ):
+    output_dir = Path(f"/media/walter/Storage/Projects/gradio_medical_ldm/outputs/{str(uuid.uuid4())}")
+    output_dir.mkdir(exist_ok=True)
+
     image_data = sample_fn(
         gender_radio,
         age_slider,
@@ -87,9 +91,6 @@ def create_videos_and_file(
     image_data = image_data[0, 0, 5:-5, 5:-5, :-15]
     image_data = (image_data - image_data.min()) / (image_data.max() - image_data.min())
     image_data = (image_data * 255).astype(np.uint8)
-
-    output_dir = Path(f"/media/walter/Storage/Projects/gradio_medical_ldm/outputs/{str(uuid.uuid4())}")
-    output_dir.mkdir(exist_ok=True)
 
     # Write frames to video
     with mediapy.VideoWriter(f"{str(output_dir)}/brain_axial.mp4", shape=(150, 214), fps=12, crf=18) as w:
@@ -129,15 +130,36 @@ def create_videos_and_file(
     return f"{str(output_dir)}/brain_axial.mp4", f"{str(output_dir)}/brain_sagittal.mp4", f"{str(output_dir)}/brain_coronal.mp4", f"{str(output_dir)}/my_brain.nii.gz"
 
 
+def randomise():
+    random_age = round(random.uniform(44.0, 82.0), 2)
+    return (
+        random.choice(["Female", "Male"]),
+        random_age,
+        round(random.uniform(0, 1.0), 2),
+        round(random.uniform(0, 1.0), 2)
+    )
+
+
+def unrest_randomise():
+    random_age = round(random.uniform(18.0, 100.0), 2)
+    return (
+        random.choice([1, 0]),
+        random_age,
+        round(random.uniform(-1.0, 2.0), 2),
+        round(random.uniform(-1.0, 2.0), 2)
+    )
+
+
 # TEXT
 title = "Generating Brain Imaging with Diffusion Models"
 description = """
+WORK IN PROGRESS. DO NOT SHARE.
 <center><a href="https://amigos.ai/">[PAPER]</a> <a href="https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b">[DATASET]</a></center>
 
 <details>
 <summary>Instructions</summary>
 
-With this app, you can generate synthetic brain images with one click!<br />You have two ways to set how your generated brain will look like:<br />- Using the "Inputs" tab that creates well-behaved brains using the same value ranges that our models learned<br />- Or using the "Unrestricted Inputs" tab to generate the wildest brains!<br />After customisation, just hit "Generate" and wait a few seconds. You can also download your new brain and visualise it with your favorite nifti viewer app. <br />* Note: You might need to rename the downloaded file to "my_brain.nii.gz" due to some issues with Gradio. =X <b>Enjoy!<b>
+With this app, you can generate synthetic brain images with one click!<br />You have two ways to set how your generated brain will look like:<br />- Using the "Inputs" tab that creates well-behaved brains using the same value ranges that our models learned as described in paper linked above<br />- Or using the "Unrestricted Inputs" tab to generate the wildest brains!<br />After customisation, just hit "Generate" and wait a few seconds. You can also download your new brain and visualise it with your favorite nifti viewer app. <br />* Note: You might need to rename the downloaded file to "my_brain.nii.gz". <b>Enjoy!<b>
 </details>
 
 """
@@ -195,6 +217,7 @@ with demo:
                             )
                         with gr.Row():
                             submit_btn = gr.Button("Generate", variant="primary")
+                            randomize_btn = gr.Button("I'm Feeling Lucky")
 
                     with gr.TabItem("Unrestricted Inputs"):
                         with gr.Row():
@@ -225,6 +248,7 @@ with demo:
                             )
                         with gr.Row():
                             unrest_submit_btn = gr.Button("Generate", variant="primary")
+                            unrest_randomize_btn = gr.Button("I'm Feeling Lucky")
 
                         gr.Examples(
                             examples=[
@@ -275,5 +299,17 @@ with demo:
         [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
     )
 
-# demo.launch(share=True)
-demo.launch()
+    randomize_btn.click(
+        randomise,
+        [],
+        [gender_radio, age_slider, ventricular_slider, brain_slider],
+    )
+
+    unrest_randomize_btn.click(
+        unrest_randomise,
+        [],
+        [unrest_gender_number, unrest_age_number, unrest_ventricular_number, unrest_brain_number],
+    )
+
+# demo.launch(share=True, enable_queue=True)
+demo.launch(debug=True)
