@@ -96,74 +96,35 @@ def create_videos_and_file(
     image_data = (image_data * 255).astype(np.uint8)
 
     # Write frames to video
-    out = cv2.VideoWriter(
-        f"{str(output_dir)}/brain_axial.mp4",
-        cv2.VideoWriter_fourcc(*'avc1'),
-        12,
-        (150, 214),
-        False
-    )
-    for idx in range(image_data.shape[2]):
-        img = image_data[:, :, idx]
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-        frame = img_as_ubyte(img)
-        out.write(frame)
-    out.release()
+    mediapy.set_ffmpeg(ffmpeg_path)
+    with mediapy.VideoWriter(
+        f"{str(output_dir)}/brain_axial.mp4", shape=(150, 214), fps=12, crf=18
+    ) as w:
+        for idx in range(image_data.shape[2]):
+            img = image_data[:, :, idx]
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+            frame = img_as_ubyte(img)
+            w.add_image(frame)
 
-    # with mediapy.VideoWriter(
-    #     f"{str(output_dir)}/brain_axial.mp4", shape=(150, 214), fps=12, crf=18
-    # ) as w:
-    #     for idx in range(image_data.shape[2]):
-    #         img = image_data[:, :, idx]
-    #         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-    #         frame = img_as_ubyte(img)
-    #         w.add_image(frame)
+    mediapy.set_ffmpeg(ffmpeg_path)
+    with mediapy.VideoWriter(
+        f"{str(output_dir)}/brain_sagittal.mp4", shape=(145, 214), fps=12, crf=18
+    ) as w:
+        for idx in range(image_data.shape[0]):
+            img = np.rot90(image_data[idx, :, :])
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+            frame = img_as_ubyte(img)
+            w.add_image(frame)
 
-    # Write frames to video
-    out = cv2.VideoWriter(
-        f"{str(output_dir)}/brain_sagittal.mp4",
-        cv2.VideoWriter_fourcc(*'avc1'),
-        12,
-        (145, 214)
-    )
-    for idx in range(image_data.shape[0]):
-        img = np.rot90(image_data[idx, :, :])
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-        frame = img_as_ubyte(img)
-        out.write(frame)
-    out.release()
-
-    # with mediapy.VideoWriter(
-    #     f"{str(output_dir)}/brain_sagittal.mp4", shape=(145, 214), fps=12, crf=18
-    # ) as w:
-    #     for idx in range(image_data.shape[0]):
-    #         img = np.rot90(image_data[idx, :, :])
-    #         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-    #         frame = img_as_ubyte(img)
-    #         w.add_image(frame)
-
-    # Write frames to video
-    out = cv2.VideoWriter(
-        f"{str(output_dir)}/brain_coronal.mp4",
-        cv2.VideoWriter_fourcc(*'avc1'),
-        12,
-        (145, 150)
-    )
-    for idx in range(image_data.shape[1]):
-        img = np.rot90(np.flip(image_data, axis=1)[:, idx, :])
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-        frame = img_as_ubyte(img)
-        out.write(frame)
-    out.release()
-
-    # with mediapy.VideoWriter(
-    #     f"{str(output_dir)}/brain_coronal.mp4", shape=(145, 150), fps=12, crf=18
-    # ) as w:
-    #     for idx in range(image_data.shape[1]):
-    #         img = np.rot90(np.flip(image_data, axis=1)[:, idx, :])
-    #         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-    #         frame = img_as_ubyte(img)
-    #         w.add_image(frame)
+    mediapy.set_ffmpeg(ffmpeg_path)
+    with mediapy.VideoWriter(
+        f"{str(output_dir)}/brain_coronal.mp4", shape=(145, 150), fps=12, crf=18
+    ) as w:
+        for idx in range(image_data.shape[1]):
+            img = np.rot90(np.flip(image_data, axis=1)[:, idx, :])
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+            frame = img_as_ubyte(img)
+            w.add_image(frame)
 
     # # Create file
     # affine = np.array(
