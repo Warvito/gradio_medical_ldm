@@ -13,7 +13,7 @@ from skimage import img_as_ubyte
 
 from models.ddim import DDIMSampler
 
-# import nibabel as nib
+import nibabel as nib
 
 ffmpeg_path = shutil.which("ffmpeg")
 mediapy.set_ffmpeg(ffmpeg_path)
@@ -123,18 +123,18 @@ def create_videos_and_file(
             frame = img_as_ubyte(img)
             w.add_image(frame)
 
-    # # Create file
-    # affine = np.array(
-    #     [
-    #         [-1.0, 0.0, 0.0, 96.48149872],
-    #         [0.0, 1.0, 0.0, -141.47715759],
-    #         [0.0, 0.0, 1.0, -156.55375671],
-    #         [0.0, 0.0, 0.0, 1.0],
-    #     ]
-    # )
-    # empty_header = nib.Nifti1Header()
-    # sample_nii = nib.Nifti1Image(image_data, affine, empty_header)
-    # nib.save(sample_nii, f"{str(output_dir)}/my_brain.nii.gz")
+    # Create file
+    affine = np.array(
+        [
+            [-1.0, 0.0, 0.0, 96.48149872],
+            [0.0, 1.0, 0.0, -141.47715759],
+            [0.0, 0.0, 1.0, -156.55375671],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+    empty_header = nib.Nifti1Header()
+    sample_nii = nib.Nifti1Image(image_data, affine, empty_header)
+    nib.save(sample_nii, f"{str(output_dir)}/my_brain.nii.gz")
 
     # time.sleep(2)
 
@@ -142,7 +142,7 @@ def create_videos_and_file(
         f"{str(output_dir)}/brain_axial.mp4",
         f"{str(output_dir)}/brain_sagittal.mp4",
         f"{str(output_dir)}/brain_coronal.mp4",
-        # f"{str(output_dir)}/my_brain.nii.gz",
+        f"{str(output_dir)}/my_brain.nii.gz",
     )
 
 
@@ -288,7 +288,7 @@ with demo:
                         sagittal_sample_plot = gr.Video(show_label=False)
                     with gr.TabItem("Coronal View"):
                         coronal_sample_plot = gr.Video(show_label=False)
-                # sample_file = gr.File(label="My Brain")
+                sample_file = gr.File(label="My Brain")
 
     gr.Markdown(article)
 
@@ -300,8 +300,8 @@ with demo:
             ventricular_slider,
             brain_slider,
         ],
-        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
-        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
+        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
+        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
     unrest_submit_btn.click(
         create_videos_and_file,
@@ -311,8 +311,8 @@ with demo:
             unrest_ventricular_number,
             unrest_brain_number,
         ],
-        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
-        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
+        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
+        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
 
     randomize_btn.click(
@@ -334,5 +334,5 @@ with demo:
         ],
     )
 
-demo.launch(share=True, enable_queue=True, prevent_thread_lock=True)
-# demo.launch(debug=True, enable_queue=True)
+# demo.launch(share=True, enable_queue=True)
+demo.launch(enable_queue=True)

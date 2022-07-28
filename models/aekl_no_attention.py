@@ -151,7 +151,6 @@ class Encoder(nn.Module):
                 blocks.append(Downsample(block_in_ch))
                 curr_res = tuple(ti // 2 for ti in curr_res)
 
-
         # normalise and convert to latent size
         blocks.append(Normalize(block_in_ch))
         blocks.append(
@@ -249,44 +248,10 @@ class AutoencoderKL(nn.Module):
         self.post_quant_conv = torch.nn.Conv3d(embed_dim, hparams["z_channels"], 1)
         self.embed_dim = embed_dim
 
-    def encode(self, x):
-        h = self.encoder(x)
-
-        z_mu = self.quant_conv_mu(h)
-        z_log_var = self.quant_conv_log_sigma(h)
-        z_log_var = torch.clamp(z_log_var, -30.0, 20.0)
-        z_sigma = torch.exp(z_log_var / 2)
-
-        return z_mu, z_sigma
-
-    def sampling(self, z_mu, z_sigma):
-        eps = torch.randn_like(z_sigma)
-        z_vae = z_mu + eps * z_sigma
-        return z_vae
-
-    def reconstruct(self, x):
-        z_mu, _ = self.encode(x)
-        reconstruction = self.decode(z_mu)
-        return reconstruction
-
     def decode(self, z):
         z = self.post_quant_conv(z)
         dec = self.decoder(z)
         return dec
-
-    def forward(self, x, get_ldm_inputs=False):
-        if get_ldm_inputs:
-            return self.get_ldm_inputs(x)
-        else:
-            z_mu, z_sigma = self.encode(x)
-            z = self.sampling(z_mu, z_sigma)
-            reconstruction = self.decode(z)
-            return reconstruction, z_mu, z_sigma
-
-    def get_ldm_inputs(self, img):
-        z_mu, z_sigma = self.encode(img)
-        z = self.sampling(z_mu, z_sigma)
-        return z
 
     def reconstruct_ldm_outputs(self, z):
         x_hat = self.decode(z)
