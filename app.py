@@ -74,6 +74,11 @@ def sample_fn(
     return x_hat.numpy()
 
 
+def sample_with_text_fn(text_prompt):
+    # Not implemented
+    pass
+
+
 def create_videos_and_file(
     gender_radio,
     age_slider,
@@ -169,13 +174,17 @@ def unrest_randomise():
 # TEXT
 title = "Generating Brain Imaging with Diffusion Models"
 description = """
-<center><b>WORK IN PROGRESS. DO NOT SHARE.</b></center>
 <center><a href="https://arxiv.org/">[PAPER]</a> <a href="https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b">[DATASET]</a></center>
 
 <details>
 <summary>Instructions</summary>
 
-With this app, you can generate synthetic brain images with one click!<br />You have two ways to set how your generated brain will look like:<br />- Using the "Inputs" tab that creates well-behaved brains using the same value ranges that our models learned as described in paper linked above<br />- Or using the "Unrestricted Inputs" tab to generate the wildest brains!<br />After customisation, just hit "Generate" and wait a few seconds.<br />Note: if are having problems with the videos, try our app using chrome. <b>Enjoy!<b>
+<p>With this app, you can generate synthetic brain images with one click!<br />You have two ways to set how your generated brain will look like:<br /></p>
+ <ul style="margin-top: -20px;margin-bottom: -15px;">
+  <li style="margin-bottom: -10px;margin-left: 20px;">Using the "<i>Inputs</i>" tab that creates well-behaved brains using the same value ranges <br />that our models learned as described in paper linked above</li>
+  <li style="margin-left: 20px;">Or using the "<i>Unrestricted Inputs</i>" tab to generate the wildest brains!</li>
+</ul> 
+<p>After customisation, just hit "<i>Generate</i>" and wait a few seconds.<br />Note: if are having problems with the videos, try our app using chrome. <b>Enjoy!<b><p>
 </details>
 
 """
@@ -184,7 +193,7 @@ article = """
 Checkout our dataset with [100K synthetic brain](https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b)! 🧠🧠🧠
 
 App made by [Walter Hugo Lopez Pinaya](https://twitter.com/warvito) from [AMIGO](https://amigos.ai/)
-<center><img src="https://amigos.ai/assets/images/logo_dark_rect.png" alt="amigos.ai" width=300px></center>
+<center><img src="https://amigos.ai/assets/images/logo_dark_rect.png" alt="amigos.ai" style="width:300px;"></center>
 """
 
 demo = gr.Blocks()
@@ -278,6 +287,21 @@ with demo:
                                 unrest_brain_number,
                             ],
                         )
+                    with gr.TabItem("Text prompt"):
+                        text_prompt = gr.Textbox("Coming soon... Follow me on twitter to get latest updates.", show_label=False, interactive=False)
+                        submit_text_btn = gr.Button("Generate", variant="primary", )
+                        gr.Examples(
+                            examples=[
+                                ["32 years old | Normal appearance brain"],
+                                ["T2 weighted | Male | 50 years old | There are a few T2 hyperintensities in the deep white matter of the frontal lobes"],
+                                ["Minor small vessel change"],
+                                ["T1 weighted | There is a mild to moderate arachnoid cyst within the anterior left middle cranial fossa"],
+                            ],
+                            inputs=[
+                                text_prompt
+                            ],
+                        )
+
 
         with gr.Column():
             with gr.Box():
@@ -333,6 +357,12 @@ with demo:
             unrest_brain_number,
         ],
     )
+
+    # submit_text_btn.click(
+    #     fn=sample_with_text_fn,
+    #     inputs=[text_prompt],
+    #     outputs=[axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
+    # )
 
 # demo.launch(share=True, enable_queue=True)
 demo.launch(enable_queue=True)
