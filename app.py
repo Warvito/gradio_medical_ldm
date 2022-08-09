@@ -147,7 +147,7 @@ def create_videos_and_file(
         f"{str(output_dir)}/brain_axial.mp4",
         f"{str(output_dir)}/brain_sagittal.mp4",
         f"{str(output_dir)}/brain_coronal.mp4",
-        f"{str(output_dir)}/my_brain.nii.gz",
+        # f"{str(output_dir)}/my_brain.nii.gz",
     )
 
 
@@ -174,15 +174,17 @@ def unrest_randomise():
 # TEXT
 title = "Generating Brain Imaging with Diffusion Models"
 description = """
+DO NOT SHARE!
 <center><a href="https://arxiv.org/">[PAPER]</a> <a href="https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b">[DATASET]</a></center>
 
 <details>
 <summary><b>Instructions</b></summary>
 
-<p style="margin-top: -3px;">With this app, you can generate synthetic brain images with one click!<br />You have two ways to set how your generated brain will look like:<br /></p>
+<p style="margin-top: -3px;">With this app, you can generate synthetic brain images with one click!<br />You have several ways to set how your generated brain will look like:<br /></p>
  <ul style="margin-top: -20px;margin-bottom: -15px;">
   <li style="margin-bottom: -10px;margin-left: 20px;">Using the "<i>Inputs</i>" tab that creates well-behaved brains using the same value ranges <br />that our models learned as described in paper linked above</li>
-  <li style="margin-left: 20px;">Or using the "<i>Unrestricted Inputs</i>" tab to generate the wildest brains!</li>
+  <li style="margin-left: 20px;">Using the "<i>Unrestricted Inputs</i>" tab to generate the wildest brains!</li>
+  <li style="margin-left: 20px;">Using the "<i>Text prompt</i>" tab to generate brains based on text descriptions (Coming soon).</li>
 </ul> 
 <p>After customisation, just hit "<i>Generate</i>" and wait a few seconds.<br />Note: if are having problems with the videos, try our app using chrome. <b>Enjoy!<b><p>
 </details>
@@ -312,7 +314,7 @@ with demo:
                         sagittal_sample_plot = gr.Video(show_label=False)
                     with gr.TabItem("Coronal View"):
                         coronal_sample_plot = gr.Video(show_label=False)
-                sample_file = gr.File(label="My Brain")
+                # sample_file = gr.File(label="My Brain")
 
     gr.Markdown(article)
 
@@ -324,8 +326,8 @@ with demo:
             ventricular_slider,
             brain_slider,
         ],
-        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
-        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
+        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
+        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
     unrest_submit_btn.click(
         create_videos_and_file,
@@ -335,8 +337,8 @@ with demo:
             unrest_ventricular_number,
             unrest_brain_number,
         ],
-        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
-        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
+        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
+        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
 
     randomize_btn.click(
