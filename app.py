@@ -182,9 +182,9 @@ DO NOT SHARE!
 
 <p style="margin-top: -3px;">With this app, you can generate synthetic brain images with one click!<br />You have several ways to set how your generated brain will look like:<br /></p>
  <ul style="margin-top: -20px;margin-bottom: -15px;">
-  <li style="margin-bottom: -10px;margin-left: 20px;">Using the "<i>Inputs</i>" tab that creates well-behaved brains using the same value ranges <br />that our models learned as described in paper linked above</li>
-  <li style="margin-left: 20px;">Using the "<i>Unrestricted Inputs</i>" tab to generate the wildest brains!</li>
-  <li style="margin-left: 20px;">Using the "<i>Text prompt</i>" tab to generate brains based on text descriptions (Coming soon).</li>
+  <li style="margin-bottom: -10px;margin-left: 20px;">Use the "<i>Inputs</i>" tab to create well-behaved brains using the same value ranges that our <br />models learned as described in paper linked above</li>
+  <li style="margin-left: 20px;">Use the "<i>Unrestricted Inputs</i>" tab to generate the wildest brains!</li>
+  <li style="margin-left: 20px;">Use the "<i>Text prompt</i>" tab to generate brains based on text descriptions (Coming soon).</li>
 </ul> 
 <p>After customisation, just hit "<i>Generate</i>" and wait a few seconds.<br />Note: if are having problems with the videos, try our app using chrome. <b>Enjoy!<b><p>
 </details>
