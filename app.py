@@ -147,7 +147,7 @@ def create_videos_and_file(
         f"{str(output_dir)}/brain_axial.mp4",
         f"{str(output_dir)}/brain_sagittal.mp4",
         f"{str(output_dir)}/brain_coronal.mp4",
-        # f"{str(output_dir)}/my_brain.nii.gz",
+        f"{str(output_dir)}/my_brain.nii.gz",
     )
 
 
@@ -174,7 +174,6 @@ def unrest_randomise():
 # TEXT
 title = "Generating Brain Imaging with Diffusion Models"
 description = """
-DO NOT SHARE!
 <center><a href="https://arxiv.org/">[PAPER]</a> <a href="https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b">[DATASET]</a></center>
 
 <details>
@@ -314,7 +313,7 @@ with demo:
                         sagittal_sample_plot = gr.Video(show_label=False)
                     with gr.TabItem("Coronal View"):
                         coronal_sample_plot = gr.Video(show_label=False)
-                # sample_file = gr.File(label="My Brain")
+                sample_file = gr.File(label="My Brain")
 
     gr.Markdown(article)
 
@@ -326,8 +325,8 @@ with demo:
             ventricular_slider,
             brain_slider,
         ],
-        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
-        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
+        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
+        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
     unrest_submit_btn.click(
         create_videos_and_file,
@@ -337,8 +336,8 @@ with demo:
             unrest_ventricular_number,
             unrest_brain_number,
         ],
-        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
-        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
+        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
+        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
 
     randomize_btn.click(
@@ -367,4 +366,7 @@ with demo:
     # )
 
 # demo.launch(share=True, enable_queue=True)
-demo.launch(enable_queue=True)
+# demo.launch(enable_queue=True)
+demo.queue()
+demo.launch()
+
