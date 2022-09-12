@@ -185,7 +185,7 @@ description = """
   <li style="margin-left: 20px;">Use the "<i>Unrestricted Inputs</i>" tab to generate the wildest brains!</li>
   <li style="margin-left: 20px;">Use the "<i>Text prompt</i>" tab to generate brains based on text descriptions (Coming soon).</li>
 </ul> 
-<p>After customisation, just hit "<i>Generate</i>" and wait a few seconds.<br />Note: if are having problems with the videos, try our app using chrome. <b>Enjoy!<b><p>
+<p>After customisation, just hit "<i>Generate</i>" and wait a few seconds.<br />The generated brain will also be available for download, and you can use your favourite Nifti Viewer to check it.<br />Note: if are having problems with the videos, try our app using chrome. <b>Enjoy!<b><p>
 </details>
 
 """
@@ -194,7 +194,8 @@ article = """
 Checkout our dataset with [100K synthetic brain](https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b)! 🧠🧠🧠
 
 App made by [Walter Hugo Lopez Pinaya](https://twitter.com/warvito) from [AMIGO](https://amigos.ai/)
-<center><img src="https://amigos.ai/assets/images/logo_dark_rect.png" alt="amigos.ai" style="width:300px;"></center>
+<center><img src="https://raw.githubusercontent.com/Warvito/public_images/master/assets/Footer_1.png" alt="Project by amigos.ai" style="width:450px;"></center>
+<center><img src="https://raw.githubusercontent.com/Warvito/public_images/master/assets/Footer_2.png" alt="Acknowledgements" style="width:750px;"></center>
 """
 
 demo = gr.Blocks()
