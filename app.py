@@ -369,5 +369,5 @@ with demo:
 # demo.launch(share=True, enable_queue=True)
 # demo.launch(enable_queue=True)
 demo.queue()
-demo.launch()
+demo.launch(share=True)
 
