@@ -174,7 +174,7 @@ def unrest_randomise():
 # TEXT
 title = "Generating Brain Imaging with Diffusion Models"
 description = """
-<center><a href="https://arxiv.org/">[PAPER]</a> <a href="https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b">[DATASET]</a></center>
+<center><a href="https://arxiv.org/abs/2209.07162">[PAPER]</a> <a href="https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b">[DATASET]</a></center>
 
 <details>
 <summary><b>Instructions</b></summary>
