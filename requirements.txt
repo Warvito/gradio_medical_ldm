@@ -1,10 +1,6 @@
-einops>=0.3.2
-gradio==3.3.1
-mediapy==1.0.3
-mlflow
+gradio==3.19.1
+mediapy==1.1.6
 nibabel
-omegaconf==2.1.1
-opencv-python==4.6.0.66
-plotly==5.9.0
+opencv-python==4.7.0.72
 scikit-image==0.19.3
 tqdm

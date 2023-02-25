@@ -6,34 +6,62 @@ from pathlib import Path
 import cv2
 import gradio as gr
 import mediapy
-import mlflow.pytorch
+import nibabel as nib
 import numpy as np
 import torch
+from generative.networks.nets import AutoencoderKL, DiffusionModelUNet
+from generative.networks.schedulers import DDIMScheduler
 from skimage import img_as_ubyte
-
-from models.ddim import DDIMSampler
-
-import nibabel as nib
+from torch.cuda.amp import autocast
 
 ffmpeg_path = shutil.which("ffmpeg")
 mediapy.set_ffmpeg(ffmpeg_path)
 
 # Loading model
-vqvae = mlflow.pytorch.load_model(
-    "/media/walter/Storage/Projects/generative_modelling_ldm/mlruns/2/2f37b3b604a44b189b020028aa53f991/artifacts/final_model"
+aekl = AutoencoderKL(
+    spatial_dims=3,
+    in_channels=1,
+    out_channels=1,
+    num_channels=[64, 128, 128, 128],
+    latent_channels=3,
+    num_res_blocks=2,
+    norm_num_groups=32,
+    norm_eps=1e-6,
+    attention_levels=[False, False, False, False],
+    with_encoder_nonlocal_attn=False,
+    with_decoder_nonlocal_attn=False,
 )
-vqvae.eval()
+aekl.load_state_dict(torch.load("./pretrained_models/autoencoder.pth"))
+aekl.eval()
 
-diffusion = mlflow.pytorch.load_model(
-    "/media/walter/Storage/Projects/generative_modelling_ldm/mlruns/6/c7b62c88595843d3a404368c87df5607/artifacts/final_model"
+
+diffusion = DiffusionModelUNet(
+    spatial_dims=3,
+    in_channels=7,
+    out_channels=3,
+    num_channels=[256, 512, 768],
+    num_res_blocks=2,
+    attention_levels=[False, True, True],
+    norm_num_groups=32,
+    norm_eps=1e-6,
+    resblock_updown=True,
+    num_head_channels=[0, 512, 768],
+    with_conditioning=True,
+    transformer_num_layers=1,
+    cross_attention_dim=4,
 )
+diffusion.load_state_dict(torch.load("./pretrained_models/diffusion_model.pth"))
 diffusion.eval()
+
+scheduler = DDIMScheduler(beta_start=0.0001, beta_end=0.02, beta_schedule="scaled_linear")
+scheduler.set_timesteps(num_inference_steps=200)
 
 device = torch.device("cuda")
 diffusion = diffusion.to(device)
-vqvae = vqvae.to(device)
+aekl = aekl.to(device)
 
 
+@torch.no_grad()
 def sample_fn(
     gender_radio,
     age_slider,
@@ -49,34 +77,26 @@ def sample_fn(
     age_slider = (age_slider - 44) / (82 - 44)
 
     cond = torch.Tensor([[gender_radio, age_slider, ventricular_slider, brain_slider]])
-    latent_shape = [1, 3, 20, 28, 20]
-    cond_crossatten = cond.unsqueeze(1)
-    cond_concat = cond.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
-    cond_concat = cond_concat.expand(list(cond.shape[0:2]) + list(latent_shape[2:]))
-    conditioning = {
-        "c_concat": [cond_concat.float().to(device)],
-        "c_crossattn": [cond_crossatten.float().to(device)],
-    }
+    latent_shape = torch.randn((1, 3, 20, 28, 20)).to(device)
 
-    ddim = DDIMSampler(diffusion)
-    num_timesteps = 50
-    latent_vectors, _ = ddim.sample(
-        num_timesteps,
-        conditioning=conditioning,
-        batch_size=1,
-        shape=list(latent_shape[1:]),
-        eta=1.0,
-    )
+    progress_bar = iter(scheduler.timesteps)
+    image = latent_shape
+    conditioning = cond.to("cuda").unsqueeze(1)
+    cond_concat = conditioning.squeeze(1).unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
+    cond_concat = cond_concat.expand(list(cond_concat.shape[0:2]) + list(image.shape[2:]))
+    for t in progress_bar:
+        with autocast():
+            model_output = diffusion(
+                torch.cat((image, cond_concat), dim=1),
+                timesteps=torch.Tensor((t,)).to(image.device).long(),
+                context=conditioning,
+            )
+            image, _ = scheduler.step(model_output, t, image)
 
-    with torch.no_grad():
-        x_hat = vqvae.reconstruct_ldm_outputs(latent_vectors).cpu()
+    with autocast():
+        x_hat = aekl.decode_stage_2_outputs(image)
 
-    return x_hat.numpy()
-
-
-def sample_with_text_fn(text_prompt):
-    # Not implemented
-    pass
+    return x_hat.cpu().numpy()
 
 
 def create_videos_and_file(
@@ -85,9 +105,7 @@ def create_videos_and_file(
     ventricular_slider,
     brain_slider,
 ):
-    output_dir = Path(
-        f"/media/walter/Storage/Projects/gradio_medical_ldm/outputs/{str(uuid.uuid4())}"
-    )
+    output_dir = Path(f"/media/walter/Storage/Projects/gradio_medical_ldm/outputs/{str(uuid.uuid4())}")
     output_dir.mkdir(exist_ok=True)
 
     image_data = sample_fn(
@@ -101,27 +119,21 @@ def create_videos_and_file(
     image_data = (image_data * 255).astype(np.uint8)
 
     # Write frames to video
-    with mediapy.VideoWriter(
-        f"{str(output_dir)}/brain_axial.mp4", shape=(150, 214), fps=12, crf=18
-    ) as w:
+    with mediapy.VideoWriter(f"{str(output_dir)}/brain_axial.mp4", shape=(150, 214), fps=12, crf=18) as w:
         for idx in range(image_data.shape[2]):
             img = image_data[:, :, idx]
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
             frame = img_as_ubyte(img)
             w.add_image(frame)
 
-    with mediapy.VideoWriter(
-        f"{str(output_dir)}/brain_sagittal.mp4", shape=(145, 214), fps=12, crf=18
-    ) as w:
+    with mediapy.VideoWriter(f"{str(output_dir)}/brain_sagittal.mp4", shape=(145, 214), fps=12, crf=18) as w:
         for idx in range(image_data.shape[0]):
             img = np.rot90(image_data[idx, :, :])
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
             frame = img_as_ubyte(img)
             w.add_image(frame)
 
-    with mediapy.VideoWriter(
-        f"{str(output_dir)}/brain_coronal.mp4", shape=(145, 150), fps=12, crf=18
-    ) as w:
+    with mediapy.VideoWriter(f"{str(output_dir)}/brain_coronal.mp4", shape=(145, 150), fps=12, crf=18) as w:
         for idx in range(image_data.shape[1]):
             img = np.rot90(np.flip(image_data, axis=1)[:, idx, :])
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
@@ -151,59 +163,67 @@ def create_videos_and_file(
     )
 
 
-def randomise():
-    random_age = round(random.uniform(44.0, 82.0), 2)
-    return (
-        random.choice(["Female", "Male"]),
-        random_age,
-        round(random.uniform(0, 1.0), 2),
-        round(random.uniform(0, 1.0), 2),
-    )
-
-
-def unrest_randomise():
-    random_age = round(random.uniform(18.0, 100.0), 2)
-    return (
-        random.choice([1, 0]),
-        random_age,
-        round(random.uniform(-1.0, 2.0), 2),
-        round(random.uniform(-1.0, 2.0), 2),
-    )
-
-
 # TEXT
-title = "Generating Brain Imaging with Diffusion Models"
-description = """
-<center><a href="https://arxiv.org/abs/2209.07162">[PAPER]</a> <a href="https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b">[DATASET]</a></center>
-
-<details>
-<summary><b>Instructions</b></summary>
-
-<p style="margin-top: -3px;">With this app, you can generate synthetic brain images with one click!<br />You have several ways to set how your generated brain will look like:<br /></p>
- <ul style="margin-top: -20px;margin-bottom: -15px;">
-  <li style="margin-bottom: -10px;margin-left: 20px;">Use the "<i>Inputs</i>" tab to create well-behaved brains using the same value ranges that our <br />models learned as described in paper linked above</li>
-  <li style="margin-left: 20px;">Use the "<i>Unrestricted Inputs</i>" tab to generate the wildest brains!</li>
-  <li style="margin-left: 20px;">Use the "<i>Text prompt</i>" tab to generate brains based on text descriptions (Coming soon).</li>
-</ul> 
-<p>After customisation, just hit "<i>Generate</i>" and wait a few seconds.<br />The generated brain will also be available for download, and you can use your favourite Nifti Viewer to check it.<br />Note: if are having problems with the videos, try our app using chrome. <b>Enjoy!<b><p>
-</details>
-
-"""
-
+title = "Brain imaging generation with latent diffusion models"
+description = ""
 article = """
-Checkout our dataset with [100K synthetic brain](https://academictorrents.com/details/63aeb864bbe2115ded0aa0d7d36334c026f0660b)! 🧠🧠🧠
-
-App made by [Walter Hugo Lopez Pinaya](https://twitter.com/warvito) from [AMIGO](https://amigos.ai/)
 <center><img src="https://raw.githubusercontent.com/Warvito/public_images/master/assets/Footer_1.png" alt="Project by amigos.ai" style="width:450px;"></center>
-<center><img src="https://raw.githubusercontent.com/Warvito/public_images/master/assets/Footer_2.png" alt="Acknowledgements" style="width:750px;"></center>
 """
+# background: rgb(2 163 163);
+demo = gr.Blocks(
+    css="""
+    #primary-button {border: rgb(2 163 163);background: rgb(2 163 163);background-color: rgb(2 163 163); color: white;},
+    
+    input[type='radio']:after {
+        width: 15px;
+        height: 15px;
+        border-radius: 15px;
+        top: -2px;
+        left: -1px;
+        position: relative;
+        background-color: #d1d3d1;
+        content: '';
+        display: inline-block;
+        visibility: visible;
+        border: 2px solid white;
+        background-color: rgb(2 163 163);
+    }
 
-demo = gr.Blocks()
+    input[type='radio']:checked:after {
+        width: 15px;
+        height: 15px;
+        border-radius: 15px;
+        top: -2px;
+        left: -1px;
+        position: relative;
+        background-color: #ffa500;
+        content: '';
+        display: inline-block;
+        visibility: visible;
+        border: 2px solid white;
+      background-color: rgb(2 163 163);
+    }
+    
+    input[type="range"] {
+      -webkit-appearance: none;
+      background-color: rgb(2 163 163);
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      background-color: rgb(2 163 163);
+    }
+    
+    input[type=range]::-webkit-slider-runnable-track  {
+      -webkit-appearance: none;
+      background-color: rgb(2 163 163);
+    }
+
+    """
+)
 
 with demo:
-    gr.Markdown(
-        "<h1 style='text-align: center; margin-bottom: 1rem'>" + title + "</h1>"
-    )
+    gr.Markdown("<h1 style='text-align: center; margin-bottom: 1rem; color: rgb(55 65 81); '><b>" + title + "</b></h1>")
     gr.Markdown(description)
     with gr.Row():
         with gr.Column():
@@ -230,91 +250,28 @@ with demo:
                                 minimum=0,
                                 maximum=1,
                                 value=0.5,
-                                label="Volume of ventricular cerebrospinal fluid",
+                                label="Ventricular volume",
                                 interactive=True,
                             )
                             brain_slider = gr.Slider(
                                 minimum=0,
                                 maximum=1,
                                 value=0.5,
-                                label="Volume of brain",
+                                label="Brain volume",
                                 interactive=True,
                             )
                         with gr.Row():
-                            submit_btn = gr.Button("Generate", variant="primary")
-                            randomize_btn = gr.Button("I'm Feeling Lucky")
-
-                    with gr.TabItem("Unrestricted Inputs"):
-                        with gr.Row():
-                            unrest_gender_number = gr.Number(
-                                value=1.0,
-                                precision=1,
-                                label="Gender [Female=0, Male=1]",
-                                interactive=True,
-                            )
-                            unrest_age_number = gr.Number(
-                                value=63,
-                                precision=1,
-                                label="Age [years]",
-                                interactive=True,
-                            )
-                        with gr.Row():
-                            unrest_ventricular_number = gr.Number(
-                                value=0.5,
-                                precision=2,
-                                label="Volume of ventricular cerebrospinal fluid",
-                                interactive=True,
-                            )
-                            unrest_brain_number = gr.Number(
-                                value=0.5,
-                                precision=2,
-                                label="Volume of brain",
-                                interactive=True,
-                            )
-                        with gr.Row():
-                            unrest_submit_btn = gr.Button("Generate", variant="primary")
-                            unrest_randomize_btn = gr.Button("I'm Feeling Lucky")
-
-                        gr.Examples(
-                            examples=[
-                                [1, 63, 1.3, 0.5],
-                                [0, 63, 1.9, 0.5],
-                                [1, 63, -0.5, 0.5],
-                                [0, 63, 0.5, -0.3],
-                            ],
-                            inputs=[
-                                unrest_gender_number,
-                                unrest_age_number,
-                                unrest_ventricular_number,
-                                unrest_brain_number,
-                            ],
-                        )
-                    with gr.TabItem("Text prompt"):
-                        text_prompt = gr.Textbox("Coming soon... Follow me on twitter to get latest updates.", show_label=False, interactive=False)
-                        submit_text_btn = gr.Button("Generate", variant="primary", )
-                        gr.Examples(
-                            examples=[
-                                ["32 years old | Normal appearance brain"],
-                                ["T2 weighted | Male | 50 years old | There are a few T2 hyperintensities in the deep white matter of the frontal lobes"],
-                                ["Minor small vessel change"],
-                                ["T1 weighted | There is a mild to moderate arachnoid cyst within the anterior left middle cranial fossa"],
-                            ],
-                            inputs=[
-                                text_prompt
-                            ],
-                        )
-
+                            submit_btn = gr.Button("Generate", elem_id="primary-button")
 
         with gr.Column():
             with gr.Box():
                 with gr.Tabs():
                     with gr.TabItem("Axial View"):
-                        axial_sample_plot = gr.Video(show_label=False)
+                        axial_sample_plot = gr.Video(show_label=False, format="mp4")
                     with gr.TabItem("Sagittal View"):
-                        sagittal_sample_plot = gr.Video(show_label=False)
+                        sagittal_sample_plot = gr.Video(show_label=False, format="mp4")
                     with gr.TabItem("Coronal View"):
-                        coronal_sample_plot = gr.Video(show_label=False)
-                sample_file = gr.File(label="My Brain")
+                        coronal_sample_plot = gr.Video(show_label=False, format="mp4")
 
     gr.Markdown(article)
 
@@ -326,48 +283,9 @@ with demo:
             ventricular_slider,
             brain_slider,
         ],
-        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
-        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
-    )
-    unrest_submit_btn.click(
-        create_videos_and_file,
-        [
-            unrest_gender_number,
-            unrest_age_number,
-            unrest_ventricular_number,
-            unrest_brain_number,
-        ],
-        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot, sample_file],
-        # [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
+        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
     )
 
-    randomize_btn.click(
-        fn=randomise,
-        inputs=[],
-        queue=False,
-        outputs=[gender_radio, age_slider, ventricular_slider, brain_slider],
-    )
 
-    unrest_randomize_btn.click(
-        fn=unrest_randomise,
-        inputs=[],
-        queue=False,
-        outputs=[
-            unrest_gender_number,
-            unrest_age_number,
-            unrest_ventricular_number,
-            unrest_brain_number,
-        ],
-    )
-
-    # submit_text_btn.click(
-    #     fn=sample_with_text_fn,
-    #     inputs=[text_prompt],
-    #     outputs=[axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
-    # )
-
-# demo.launch(share=True, enable_queue=True)
-# demo.launch(enable_queue=True)
 demo.queue()
-demo.launch(share=True)
-
+demo.launch()
