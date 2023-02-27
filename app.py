@@ -49,12 +49,14 @@ diffusion = DiffusionModelUNet(
     with_conditioning=True,
     transformer_num_layers=1,
     cross_attention_dim=4,
+    upcast_attention= True,
+    use_flash_attention = False
 )
 diffusion.load_state_dict(torch.load("./pretrained_models/diffusion_model.pth"))
 diffusion.eval()
 
-scheduler = DDIMScheduler(beta_start=0.0001, beta_end=0.02, beta_schedule="scaled_linear")
-scheduler.set_timesteps(num_inference_steps=200)
+scheduler = DDIMScheduler(beta_start=0.0015, beta_end=0.0205, num_train_timesteps=1000, beta_schedule="scaled_linear", clip_sample=False)
+scheduler.set_timesteps(num_inference_steps=50)
 
 device = torch.device("cuda")
 diffusion = diffusion.to(device)
