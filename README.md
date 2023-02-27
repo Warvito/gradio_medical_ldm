@@ -41,7 +41,7 @@ gradio_medical_ldm/
 gradio app.py
 ```
 
-6)Open the app in your browser (tested with Chrome)
+6) Open the app in your browser (tested with Chrome)
 
 ### Notes
 The outputs directory contain the generated .nii.gz images.
