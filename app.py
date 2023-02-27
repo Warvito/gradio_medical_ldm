@@ -1,4 +1,3 @@
-import random
 import shutil
 import uuid
 from pathlib import Path
@@ -49,13 +48,15 @@ diffusion = DiffusionModelUNet(
     with_conditioning=True,
     transformer_num_layers=1,
     cross_attention_dim=4,
-    upcast_attention= True,
-    use_flash_attention = False
+    upcast_attention=True,
+    use_flash_attention=False,
 )
 diffusion.load_state_dict(torch.load("./pretrained_models/diffusion_model.pth"))
 diffusion.eval()
 
-scheduler = DDIMScheduler(beta_start=0.0015, beta_end=0.0205, num_train_timesteps=1000, beta_schedule="scaled_linear", clip_sample=False)
+scheduler = DDIMScheduler(
+    beta_start=0.0015, beta_end=0.0205, num_train_timesteps=1000, beta_schedule="scaled_linear", clip_sample=False
+)
 scheduler.set_timesteps(num_inference_steps=50)
 
 device = torch.device("cuda")
@@ -116,28 +117,15 @@ def create_videos_and_file(
         ventricular_slider,
         brain_slider,
     )
+    print(image_data.shape)
     image_data = image_data[0, 0, 5:-5, 5:-5, :-15]
     image_data = (image_data - image_data.min()) / (image_data.max() - image_data.min())
     image_data = (image_data * 255).astype(np.uint8)
 
     # Write frames to video
-    with mediapy.VideoWriter(f"{str(output_dir)}/brain_axial.mp4", shape=(150, 214), fps=12, crf=18) as w:
+    with mediapy.VideoWriter(f"{str(output_dir)}/brain_axial.mp4", shape=(150, 214), fps=12, crf=0) as w:
         for idx in range(image_data.shape[2]):
             img = image_data[:, :, idx]
-            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-            frame = img_as_ubyte(img)
-            w.add_image(frame)
-
-    with mediapy.VideoWriter(f"{str(output_dir)}/brain_sagittal.mp4", shape=(145, 214), fps=12, crf=18) as w:
-        for idx in range(image_data.shape[0]):
-            img = np.rot90(image_data[idx, :, :])
-            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-            frame = img_as_ubyte(img)
-            w.add_image(frame)
-
-    with mediapy.VideoWriter(f"{str(output_dir)}/brain_coronal.mp4", shape=(145, 150), fps=12, crf=18) as w:
-        for idx in range(image_data.shape[1]):
-            img = np.rot90(np.flip(image_data, axis=1)[:, idx, :])
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
             frame = img_as_ubyte(img)
             w.add_image(frame)
@@ -157,70 +145,18 @@ def create_videos_and_file(
 
     # time.sleep(2)
 
-    return (
-        f"{str(output_dir)}/brain_axial.mp4",
-        f"{str(output_dir)}/brain_sagittal.mp4",
-        f"{str(output_dir)}/brain_coronal.mp4",
-        f"{str(output_dir)}/my_brain.nii.gz",
-    )
+    return f"{str(output_dir)}/brain_axial.mp4"
 
 
 # TEXT
 title = "Brain imaging generation with latent diffusion models"
 description = ""
-article = """
-<center><img src="https://raw.githubusercontent.com/Warvito/public_images/master/assets/Footer_1.png" alt="Project by amigos.ai" style="width:450px;"></center>
-"""
-# background: rgb(2 163 163);
+article = ""
+
 demo = gr.Blocks(
     css="""
+    footer {visibility: hidden}
     #primary-button {border: rgb(2 163 163);background: rgb(2 163 163);background-color: rgb(2 163 163); color: white;},
-    
-    input[type='radio']:after {
-        width: 15px;
-        height: 15px;
-        border-radius: 15px;
-        top: -2px;
-        left: -1px;
-        position: relative;
-        background-color: #d1d3d1;
-        content: '';
-        display: inline-block;
-        visibility: visible;
-        border: 2px solid white;
-        background-color: rgb(2 163 163);
-    }
-
-    input[type='radio']:checked:after {
-        width: 15px;
-        height: 15px;
-        border-radius: 15px;
-        top: -2px;
-        left: -1px;
-        position: relative;
-        background-color: #ffa500;
-        content: '';
-        display: inline-block;
-        visibility: visible;
-        border: 2px solid white;
-      background-color: rgb(2 163 163);
-    }
-    
-    input[type="range"] {
-      -webkit-appearance: none;
-      background-color: rgb(2 163 163);
-    }
-    
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      background-color: rgb(2 163 163);
-    }
-    
-    input[type=range]::-webkit-slider-runnable-track  {
-      -webkit-appearance: none;
-      background-color: rgb(2 163 163);
-    }
-
     """
 )
 
@@ -266,14 +202,10 @@ with demo:
                             submit_btn = gr.Button("Generate", elem_id="primary-button")
 
         with gr.Column():
-            with gr.Box():
+            with gr.Box(elem_id="primary-boxes"):
                 with gr.Tabs():
                     with gr.TabItem("Axial View"):
-                        axial_sample_plot = gr.Video(show_label=False, format="mp4")
-                    with gr.TabItem("Sagittal View"):
-                        sagittal_sample_plot = gr.Video(show_label=False, format="mp4")
-                    with gr.TabItem("Coronal View"):
-                        coronal_sample_plot = gr.Video(show_label=False, format="mp4")
+                        axial_sample_plot = gr.Video(show_label=False, format="mp4").style(height=540)
 
     gr.Markdown(article)
 
@@ -285,9 +217,8 @@ with demo:
             ventricular_slider,
             brain_slider,
         ],
-        [axial_sample_plot, sagittal_sample_plot, coronal_sample_plot],
+        [axial_sample_plot],
     )
-
 
 demo.queue()
 demo.launch()
